@@ -15,7 +15,7 @@ parser.add_argument('--frames', '-f', dest='frames', type=int, nargs='+',
 parser.add_argument('--num-frames', '-n', dest='num_frames', type=int, nargs='?',
                     help='Number of screenshots to take, default=10')
 parser.add_argument('--subtitle-track', '-s', dest='sub_track', type=int, const=1, nargs='?',
-                     help="Subtitle track for screenshots")
+                    help="Subtitle track for screenshots")
 
 args = parser.parse_args()
 filename = args.clip
@@ -25,7 +25,7 @@ num_frames = args.num_frames if args.num_frames is not None else 10
 
 
 def open_clip(path: str) -> vs.VideoNode:
-    '''Load clip into vapoursynth'''
+    """Load clip into vapoursynth"""
     print("If the file size is large, may take a while to index")
     if path.endswith('ts'):  # .m2ts and .ts
         clip = core.lsmas.LWLibavSource(path)
@@ -36,7 +36,7 @@ def open_clip(path: str) -> vs.VideoNode:
 
 
 def get_frame_numbers(clip, n):
-    '''Get frame numbers to get screenshots of based off of length of clip/num screenshots'''
+    """Get frame numbers to get screenshots of based off of length of clip/num screenshots"""
     length = len(open_clip(clip))
     frames = choices(range(length // 10, length // 10 * 9), k=n)
     frames = set([x // 100 for x in frames])
@@ -46,10 +46,10 @@ def get_frame_numbers(clip, n):
 
 
 def get_sub_track_id(file, num):
-    '''Returns wanted sub track id and type of subs'''
+    """Returns wanted sub track id and type of subs"""
     try:
         raw_info = subprocess.check_output(["mkvmerge", "-i", file],
-                                            stderr=subprocess.STDOUT)
+                                           stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as ex:
         print(ex)
         sys.exit(1)
@@ -57,7 +57,7 @@ def get_sub_track_id(file, num):
 
     mat = pattern.findall(str(raw_info))
     # num is 1 indexed, get only the num track in file
-    mat = mat[num-1]
+    mat = mat[num - 1]
 
     if mat:
         # track num, type of subs
@@ -67,9 +67,9 @@ def get_sub_track_id(file, num):
 
 
 def get_subs(file, save_path, track):
-    '''Extracts subs'''
-    track_id, sub_type = get_sub_track_id(file, track)
-    if track_id == None:
+    """Extracts subs"""
+    track_id_m, sub_type = get_sub_track_id(file, track)
+    if track_id is None:
         print("Error: Did not find subtitles")
         sys.exit(1)
 
@@ -83,7 +83,7 @@ def get_subs(file, save_path, track):
     try:
         with open(os.devnull, "w") as f:
             proc = subprocess.call(["mkvextract", "tracks", file,
-                        track_id + ":" + path], stdout=f)
+                                    track_id_m + ":" + path], stdout=f)
 
             if proc != 0:
                 print("ERROR: Could not extract subtitles despite finding some")
@@ -98,10 +98,10 @@ def get_subs(file, save_path, track):
 
 
 def get_fonts(file, save_path):
-    '''Extracts fonts'''
+    """Extracts fonts"""
     try:
         raw_info = subprocess.check_output(["mkvmerge", "-i", file],
-                                            stderr=subprocess.STDOUT)
+                                           stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as ex:
         print(ex)
         sys.exit(1)
@@ -110,7 +110,7 @@ def get_fonts(file, save_path):
 
     all_attachments = pattern.findall(str(raw_info))
 
-    if all_attachments == None:
+    if all_attachments is None:
         print("Found no attachments")
         return None
 
@@ -131,7 +131,7 @@ def get_fonts(file, save_path):
             print("Found font with extension but not of correct type - still extracting")
             to_extract.append([attach[0], attach[2]])
 
-    if to_extract == []:
+    if not to_extract:
         print("Found no font attachments")
         return None
 
@@ -155,33 +155,33 @@ def get_fonts(file, save_path):
 
 
 def render_subs(clip, filename, subs_extension, folder_path, frames):
-
     # first - deal with vobsubs and get subs filename
     noext = os.path.splitext(os.path.basename(filename))[0]
     if subs_extension == "VOBSUBS":
-        sub_files = [ os.path.join(folder_path, noext + ".sub"), os.path.join(folder_path, noext + ".idx") ]
+        sub_files = [os.path.join(folder_path, noext + ".sub"), os.path.join(folder_path, noext + ".idx")]
         # i'm not gonna implement this yet though
     else:
         sub_file = os.path.join(folder_path, noext + subs_extension)
 
-    if subs_extension == ".pgs" or subs_extension=="VOBSUBS":
+    if subs_extension == ".pgs" or subs_extension == "VOBSUBS":
         # atm wont work for vobsubs
         burned = core.sub.ImageFile(clip, file=sub_file, blend=True)
     else:
+        # check if this works with no fonts
         burned = core.sub.TextFile(clip, file=sub_file, fontdir=folder_path, blend=True)
 
     return imwri.Write(burned, 'png', os.path.join(save_path, '%d.png'))
 
 
-def parse_sub_type(type):
-    '''Gets file extension for subtitle type from mkvextract -i'''
-    if type == "HDMV PGS":
+def parse_sub_type(sub_type):
+    """Gets file extension for subtitle type from mkvextract -i"""
+    if sub_type == "HDMV PGS":
         return ".pgs"
-    elif type == "SubStationAlpha":
+    elif sub_type == "SubStationAlpha":
         return ".ass"
-    elif type == "SubRip/SRT":
+    elif sub_type == "SubRip/SRT":
         return ".srt"
-    elif type == "VobSub":
+    elif sub_type == "VobSub":
         # creates both a .sub and a .idx - so check after creation
         return "VOBSUBS"
     else:
