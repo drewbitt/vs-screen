@@ -1,11 +1,10 @@
 # vs-screen
-Takes screenshots of files using vapoursynth. Can extract/burn in subtitles to the screenshots if desired
+Takes screenshots of files using vapoursynth. Can extract and then burn in subtitles to the screenshots if desired. Does
+proper font extraction and usage.
 
 To do:
-- zip screenshots option
-- delete subs and fonts if desired
 - m2ts doesn't work on some clients?
-- don't burn in subtitles and work with alpha / rgb values and masks
-- test with other sub types, like utf and implement vobsubs
+- option for putting text on frames of frame number
+- option to extract all subtitles
 
 Requirements: Python 3 and vapoursynth, including things like ffms2
