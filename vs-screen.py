@@ -26,6 +26,7 @@ num_frames = args.num_frames if args.num_frames is not None else 10
 
 def open_clip(path: str) -> vs.VideoNode:
     '''Load clip into vapoursynth'''
+    print("If the file size is large, may take a while to index")
     if path.endswith('ts'):  # .m2ts and .ts
         clip = core.lsmas.LWLibavSource(path)
     else:
@@ -154,20 +155,6 @@ def get_fonts(file, save_path):
 
 
 def render_subs(clip, filename, subs_extension, folder_path, frames):
-    # what do i got
-    print(" ")
-    print(clip)
-    print(filename)
-    print(subs_extension)
-    print(folder_path)
-    print(frames)
-
-    # example has frames as times?
-    frame_times = []
-    for i in frames:
-        frame_times.append(int(i * 23.976 * 1000))
-
-    print(frame_times)
 
     # first - deal with vobsubs and get subs filename
     noext = os.path.splitext(os.path.basename(filename))[0]
@@ -177,36 +164,13 @@ def render_subs(clip, filename, subs_extension, folder_path, frames):
     else:
         sub_file = os.path.join(folder_path, noext + subs_extension)
 
-    # assumes some fps stuff at the moment
-    # b = core.std.BlankClip(width=clip.width, height=clip.height, format=vs.RGB24, length=len(clip),
-                          # fpsnum=24000, fpsden=1001)
+    if subs_extension == ".pgs" or subs_extension=="VOBSUBS":
+        # atm wont work for vobsubs
+        burned = core.sub.ImageFile(clip, file=sub_file, blend=True)
+    else:
+        burned = core.sub.TextFile(clip, file=sub_file, fontdir=folder_path, blend=True)
 
-    if subs_extension == ".pgs" or subs_extension == "VOBSUB":
-        # vobsubs not actually implemented
-        rgb = core.sub.ImageFile(clip, file=sub_file, blend=True)
-        # rgb = core.sub.ImageFile(b, file=sub_file, blend=False)
-        # alpha = core.std.PropToClip(rgb)
-        return core.imwri.Write(rgb, "PNG", os.path.join(save_path, '%d.png'), compression_type="None")
-    '''else:
-        # gonna need to define charset here which idk atm
-        # [rgb, alpha] = core.sub.TextFile(b, file=sub_file, fontdir=folder_path, charset=charset, blend=False)
-        print("was not image")
-
-
-
-   if rgb.width != clip.width or rgb.height != clip.height:
-        rgb = core.resize.Spline36(rgb, width=clip.width, height=clip.height)
-        alpha = core.resize.Spline36(alpha, width=clip.width, height=clip.height)
-
-    alpha = core.std.Invert(alpha)
-
-    from functools import reduce
-    import operator
-    #Srgb = reduce(operator.add, map(lambda x: rgb[x], frame_times))
-    #Salpha = reduce(operator.add, map(lambda x: alpha[x], frame_times))
-
-    return core.imwri.Write(rgb, "PNG", os.path.join(save_path, '%d.png'), alpha=alpha, compression_type="None")
-    '''
+    return imwri.Write(burned, 'png', os.path.join(save_path, '%d.png'))
 
 
 def parse_sub_type(type):
