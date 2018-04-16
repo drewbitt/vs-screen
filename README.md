@@ -7,4 +7,4 @@ To do:
 - Personally having unknown LWLibavSource issue for m2ts
 - Option for putting text on frames of frame number
 
-Requirements: Python 3 and vapoursynth, including things like ffms2
+Requirements: Python 3 and vapoursynth built with ImageMagick support (--enable-imwri)

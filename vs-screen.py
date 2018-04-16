@@ -7,7 +7,7 @@ import sys
 import time
 import vapoursynth as vs
 from argparse import ArgumentParser
-from random import choice, choices
+from random import choice
 
 core = vs.core
 
@@ -68,7 +68,9 @@ def open_clip(path: str) -> vs.VideoNode:
 def get_frame_numbers(clip, n):
     """Get frame numbers to get screenshots of based off of length of clip/num screenshots"""
     length = len(open_clip(clip))
-    frames = choices(range(length // 10, length // 10 * 9), k=n)
+    frames = []
+    for _ in range(n):
+        frames.append(choice(range(length // 10, length // 10 * 9)))
     frames = set([x // 100 for x in frames])
     while len(frames) < num_frames:
         frames.add(choice(range(length // 10, length // 10 * 9)) // 100)
