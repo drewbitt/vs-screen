@@ -4,12 +4,15 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 import vapoursynth as vs
 from argparse import ArgumentParser
 from random import choice, choices
 
 core = vs.core
 
+# the usage of these looks wrong when displayed with help (like --extract-only [EXTRACT_ONLY]), just
+# supposed to be a true boolean if its included otherwise false - works but looks bad
 parser = ArgumentParser(
     'Take screenshots and extract subtitles/fonts of a file. Can burn in subtitles for screenshots.')
 parser.add_argument('clip', metavar='clip', type=str, help='Path to video file')
@@ -49,6 +52,8 @@ num_frames = args.num_frames if args.num_frames is not None else 6
 if args.quiet is not None:
     sys.stdout = open(os.devnull, 'w')
 
+
+# TO-DO: use attribute errors instead of printing for most errors
 
 def open_clip(path: str) -> vs.VideoNode:
     """Load clip into vapoursynth"""
@@ -208,92 +213,85 @@ def parse_sub_type(sub_type):
 
 
 if __name__ == '__main__':
+    # create folder in beginning if needed and figure out save path
+    dir_name = re.split(r'[\\/]', filename)[-1].rsplit('.', 1)[0]
+    new_d = os.path.join(user_save_path, dir_name) if user_save_path else \
+        os.path.join(os.path.dirname(filename), dir_name)
+    if not os.path.exists(new_d):
+        os.mkdir(new_d)
+    save_path = new_d
+
     if extract_only:
         # extract only subs/fonts and exit
-        dir_name = re.split(r'[\\/]', filename)[-1].rsplit('.', 1)[0]
-        if not os.path.exists(dir_name):
-            os.mkdir(os.path.join(os.getcwd(), dir_name))
-        save_path = os.path.join(os.getcwd(), dir_name)
-        if sub_track:
-            get_subs(filename, save_path, sub_track)
+        get_subs(filename, save_path, sub_track) if sub_track else print("Sub track not specified so not grabbing")
+        get_fonts(filename, save_path)
+    else:
+        # do screenshots
+        if frames is None:
+            print("Indexing... May take a while in the file size is large")
+            frames = get_frame_numbers(filename, num_frames)
+        print('Requesting frames:', *frames)
+
+        if hasattr(core, 'imwri'):
+            imwri = core.imwri
+        elif hasattr(core, 'imwrif'):
+            imwri = core.imwrif
         else:
-            print("Sub track not specified so not grabbing")
-        get_fonts(filename, save_path)
-        sys.exit(0)
+            raise AttributeError('Either imwri or imwrif must be installed.')
 
-    if frames is None:
-        print("Indexing... May take a while in the file size is large")
-        frames = get_frame_numbers(filename, num_frames)
-    print('Requesting frames:', *frames)
+        clip = open_clip(filename)
 
-    if hasattr(core, 'imwri'):
-        imwri = core.imwri
-    elif hasattr(core, 'imwrif'):
-        imwri = core.imwrif
-    else:
-        raise AttributeError('Either imwri or imwrif must be installed.')
-    dir_name = re.split(r'[\\/]', filename)[-1].rsplit('.', 1)[0]
-    clip = open_clip(filename)
+        if sub_track:
+            # Extract subs and fonts and render them if sub track is requested
+            # I don't gotta pass these global vars but I will darn it
+            track_id, subs_extension = get_subs(filename, save_path, sub_track)
+            get_fonts(filename, save_path)
+            clip = render_subs(clip, filename, subs_extension, save_path)
+        else:
+            clip = imwri.Write(clip, 'png', os.path.join(save_path, '%d.png'))
 
-    if user_save_path:
-        if not os.path.exists(os.path.join(user_save_path, dir_name)):
-            # create folder in specified save path location
-            os.mkdir(os.path.join(user_save_path, dir_name))
-        save_path = os.path.join(os.path.dirname(user_save_path), dir_name)
-    else:
-        if not os.path.exists(os.path.join(os.path.dirname(filename), dir_name)):
-            # create folder in same directory as video file
-            os.mkdir(os.path.join(os.path.dirname(filename), dir_name))
-        save_path = os.path.join(os.path.dirname(filename), dir_name)
-
-    print(save_path)
-
-    if sub_track:
-        # Extract subs and fonts and render them if sub track is requested
-        # I don't gotta pass these global vars but I will darn it
-        track_id, subs_extension = get_subs(filename, save_path, sub_track)
-        get_fonts(filename, save_path)
-        clip = render_subs(clip, filename, subs_extension, save_path)
-    else:
-        clip = imwri.Write(clip, 'png', os.path.join(save_path, '%d.png'))
-
-    for frame in frames:
-        print('Writing {:s}/{:d}.png'.format(save_path, frame))
-        clip.get_frame(frame)
-    print("Done writing screenshots")
+        for frame in frames:
+            print('Writing {:s}/{:d}.png'.format(save_path, frame))
+            clip.get_frame(frame)
+        print("Done writing screenshots")
 
     if remove_sources:
         remove_types = ('*.pgs', '*.ass', '*.ttf', '*.otf', '*.sub', '*.idx', '*.srt')
         matching_files = []
+        old_cwd = os.getcwd()
         os.chdir(save_path)  # eh couldnt get glob to work in different directory for some reason
-        for files in remove_types:
-            matching_files.extend(glob.glob(files))
-        for files in matching_files:
-            os.remove(files)
+        # match files with glob and remove
+        [matching_files.extend(glob.glob(files)) for files in remove_types]
+        [os.remove(files) for files in matching_files]
+        os.chdir(old_cwd)  # if we remove dir while being in it, will throw error so gonna pointlessly cd out of it
+        # into something we have permissions in. no use for this really.
         print("Removed sources")
 
     if to_zip:
+        # just in case of slow disks, wait for deletion of sources
+        time.sleep(0.5)
         shutil.make_archive(save_path, 'zip', save_path)
-        print("Zipped screenshot directory")
+        print("Zipped {}".format(save_path))
 
     if remove_dir:
+        # wait for zipping to finish - these are totally made up times, if you're doing REMUX/4K change it
+        time.sleep(2) if len(frames) <= 10 else time.sleep(4)
         try:
             shutil.rmtree(save_path)
         except OSError as e:
             print("Error: %s - %s." % (e.filename, e.strerror))
         else:
-            print("Removed screenshot directory")
+            print("Removed {}".format(save_path))
 
     if remove_index:
-        # could be done better
         try:
-            os.remove(os.path.basename(filename) + ".lwi")
+            os.remove(filename + ".lwi")
             print("Removed .lwi")
             sys.exit(0)
         except OSError:
             pass
         try:
-            os.remove(os.path.basename(filename) + ".ffindex")
+            os.remove(filename + ".ffindex")
             print("Removed .ffindex")
         except OSError:
             print("Unable to remove index")
