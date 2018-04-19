@@ -1,10 +1,10 @@
 # vs-screen
-Takes screenshots of files using vapoursynth. Can extract and then burn in subtitles to the screenshots if desired. Does
-proper font extraction and usage.
-Can also just extract sutbtitles & fonts if desired.
+
+Takes screenshots of files using vapoursynth and extracts subs/fonts. Can burn in subtitles to the screenshots if desired or just extract sub(s)/all fonts.
 
 To do:
-- Personally having unknown LWLibavSource issue for m2ts
-- Option for putting text on frames of frame number
 
-Requirements: Python 3 and vapoursynth built with ImageMagick support (--enable-imwri)
+- Option for putting frame number text on screenshots
+- Implement working m2ts pgs sub extraction
+
+Requirements: Python 3 and vapoursynth built with ImageMagick support (--enable-imwri). The mkvtoolnix suite of mkvmerge/mkvextract.

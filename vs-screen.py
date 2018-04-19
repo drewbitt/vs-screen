@@ -189,7 +189,7 @@ def render_subs(clip, filename, subs_extension, folder_path):
     no_ext = os.path.splitext(os.path.basename(filename))[0]
     sub_file = os.path.join(folder_path, no_ext + subs_extension)
 
-    if subs_extension == ".pgs" or subs_extension == ".idx":
+    if subs_extension == ".sup" or subs_extension == ".idx":
         burned = core.sub.ImageFile(clip, file=sub_file, blend=True)
     else:
         burned = core.sub.TextFile(clip, file=sub_file, fontdir=folder_path, blend=True,
@@ -201,7 +201,7 @@ def render_subs(clip, filename, subs_extension, folder_path):
 def parse_sub_type(sub_type):
     """Gets file extension for subtitle type from mkvmerge -i"""
     if sub_type == "HDMV PGS":
-        return ".pgs"
+        return ".sup"
     elif sub_type == "SubStationAlpha":
         return ".ass"
     elif sub_type == "SubRip/SRT":
@@ -258,7 +258,7 @@ if __name__ == '__main__':
         print("Done writing screenshots")
 
     if remove_sources:
-        remove_types = ('*.pgs', '*.ass', '*.ttf', '*.otf', '*.sub', '*.idx', '*.srt')
+        remove_types = ('*.sup', '*.ass', '*.ttf', '*.otf', '*.sub', '*.idx', '*.srt')
         matching_files = []
         old_cwd = os.getcwd()
         os.chdir(save_path)  # eh couldnt get glob to work in different directory for some reason
