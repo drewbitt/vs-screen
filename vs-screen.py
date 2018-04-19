@@ -109,13 +109,18 @@ def get_subs(file, save_path, track):
     sub_ext = parse_sub_type(sub_type)
     # don't include extension for vobsubs since it creates a .sub and .idx
     if sub_ext == ".idx":
-        path = os.path.join(save_path, os.path.splitext(os.path.basename(file))[0])
+        path = os.path.join(save_path, os.path.splitext(os.path.basename(file))[0] + "-track" + track_id_m)
     else:
-        path = os.path.join(save_path, os.path.splitext(os.path.basename(file))[0] + sub_ext)
+        path = os.path.join(save_path, os.path.splitext(os.path.basename(file))[0] + "-track" + track_id_m + sub_ext)
 
+    file_ext = os.path.splitext(file)[1]
     try:
         with open(os.devnull, "w") as f:
-            proc = subprocess.call(["mkvextract", "tracks", file,
+            if file_ext == '.m2ts':
+                proc = subprocess.call(["ffmpeg", "-y", "-i", file, "-vn", "-an", "-map",
+		"0:" + track_id_m, "-scodec", "copy", path], stderr=f) 
+            else:
+                proc = subprocess.call(["mkvextract", "tracks", file,
                                     track_id_m + ":" + path], stdout=f)
             if proc != 0:
                 print("ERROR: Could not extract subtitles despite finding some")
@@ -185,9 +190,9 @@ def get_fonts(file, save_path):
         sys.exit(1)
 
 
-def render_subs(clip, filename, subs_extension, folder_path):
+def render_subs(clip, filename, subs_extension, folder_path, track_id):
     no_ext = os.path.splitext(os.path.basename(filename))[0]
-    sub_file = os.path.join(folder_path, no_ext + subs_extension)
+    sub_file = os.path.join(folder_path, no_ext + "-track" + track_id + subs_extension)
 
     if subs_extension == ".sup" or subs_extension == ".idx":
         burned = core.sub.ImageFile(clip, file=sub_file, blend=True)
@@ -248,7 +253,7 @@ if __name__ == '__main__':
             # I don't gotta pass these global vars but I will darn it
             track_id, subs_extension = get_subs(filename, save_path, sub_track)
             get_fonts(filename, save_path)
-            clip = render_subs(clip, filename, subs_extension, save_path)
+            clip = render_subs(clip, filename, subs_extension, save_path, track_id)
         else:
             clip = imwri.Write(clip, 'png', os.path.join(save_path, '%d.png'))
 
