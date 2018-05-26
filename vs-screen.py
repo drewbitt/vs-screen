@@ -235,7 +235,7 @@ if __name__ == '__main__':
     else:
         # do screenshots
         if frames is None:
-            print("Indexing... May take a while in the file size is large")
+            print("Indexing... May take a while if the file size is large")
             frames = get_frame_numbers(filename, num_frames)
         print('Requesting frames:', *frames)
 
@@ -263,7 +263,7 @@ if __name__ == '__main__':
         print("Done writing screenshots")
 
     if remove_sources:
-        remove_types = ('*.sup', '*.ass', '*.ttf', '*.otf', '*.sub', '*.idx', '*.srt')
+        remove_types = ('*.sup', '*.ass', '*.ttf', '*.otf', '*.sub', '*.idx', '*.srt', '*.TTF', '*.OTF')
         matching_files = []
         old_cwd = os.getcwd()
         os.chdir(save_path)  # eh couldnt get glob to work in different directory for some reason
