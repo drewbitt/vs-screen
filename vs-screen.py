@@ -143,7 +143,7 @@ def get_fonts(file, save_path):
         print(ex)
         sys.exit(1)
 
-    pattern = re.compile('Attachment ID (\d+).*?type \'(.*?)\'.*? name \'(.*?)\'')
+    pattern = re.compile('Attachment ID (\d+).*?type \'(.*?)\'.*? name \'(.*?)\'(\\\\r|\\\\n)')
     all_attachments = pattern.findall(str(raw_info))
 
     if all_attachments is None:
