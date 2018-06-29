@@ -61,7 +61,7 @@ def open_clip(path: str) -> vs.VideoNode:
         clip = core.lsmas.LWLibavSource(path)
     else:
         clip = core.ffms2.Source(path)
-    clip = clip.resize.Spline36(format=vs.RGB24, matrix_in_s='709' if clip.height > 576 else '601')
+    clip = clip.resize.Spline36(format=vs.RGB24, matrix_in_s='709' if clip.height > 576 else '470bg')
     return clip
 
 
