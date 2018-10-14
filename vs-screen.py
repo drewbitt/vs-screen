@@ -109,11 +109,7 @@ def get_subs(file, save_path, track):
         sys.exit(1)
 
     sub_ext = parse_sub_type(sub_type)
-    # don't include extension for vobsubs since it creates a .sub and .idx
-    if sub_ext == ".idx":
-        path = os.path.join(save_path, os.path.splitext(os.path.basename(file))[0] + "-track" + track_id_m)
-    else:
-        path = os.path.join(save_path, os.path.splitext(os.path.basename(file))[0] + "-track" + track_id_m + sub_ext)
+    path = os.path.join(save_path, os.path.splitext(os.path.basename(file))[0] + "-track" + track_id_m + sub_ext)
 
     file_ext = os.path.splitext(file)[1]
     try:
