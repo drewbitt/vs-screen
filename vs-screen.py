@@ -198,7 +198,7 @@ def render_subs(clip, filename, subs_extension, folder_path, track_id):
         burned = core.sub.ImageFile(clip, file=sub_file, blend=True)
     else:
         burned = core.sub.TextFile(clip, file=sub_file, fontdir=folder_path, blend=True,
-                                   primaries_s='709' if clip.height > 576 else '601')
+                                   primaries_s='709' if clip.height > 576 else '470bg')
 
     return imwri.Write(burned, 'png', os.path.join(save_path, '%d.png'))
 
